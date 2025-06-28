@@ -1,102 +1,51 @@
-# Import modules and packages
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
+def plot_predictions(train_data, train_labels, test_data, test_labels, predictions):
+    plt.figure(figsize=(6, 5))
+    plt.scatter(train_data, train_labels, c="b", label="Training data")
+    plt.scatter(test_data,  test_labels,  c="g", label="Testing data")
+    plt.scatter(test_data,  predictions,  c="r", label="Predictions")
+    plt.legend()
+    plt.grid(which='major', c='#cccccc', linestyle='--', alpha=0.5)
+    plt.title('Model Results')
+    plt.xlabel('X axis values')
+    plt.ylabel('Y axis values')
+    plt.savefig('model_results.png', dpi=120)
 
-# Functions and procedures
-def plot_predictions(train_data, train_labels,  test_data, test_labels,  predictions):
-  """
-  Plots training data, test data and compares predictions.
-  """
-  plt.figure(figsize=(6, 5))
-  # Plot training data in blue
-  plt.scatter(train_data, train_labels, c="b", label="Training data")
-  # Plot test data in green
-  plt.scatter(test_data, test_labels, c="g", label="Testing data")
-  # Plot the predictions in red (predictions were made on the test data)
-  plt.scatter(test_data, predictions, c="r", label="Predictions")
-  # Show the legend
-  plt.legend(shadow='True')
-  # Set grids
-  plt.grid(which='major', c='#cccccc', linestyle='--', alpha=0.5)
-  # Some text
-  plt.title('Model Results', family='Arial', fontsize=14)
-  plt.xlabel('X axis values', family='Arial', fontsize=11)
-  plt.ylabel('Y axis values', family='Arial', fontsize=11)
-  # Show
-  plt.savefig('model_results.png', dpi=120)
+# 1. Create data
+X = np.arange(-100, 100, 4, dtype=np.float32)
+y = np.arange(-90, 110, 4, dtype=np.float32)
 
+# 2. Train / test split
+X_train, X_test = X[:40], X[40:]
+y_train, y_test = y[:40], y[40:]
 
+# 3. Reshape to (batch, 1)
+X_train = X_train.reshape(-1, 1)
+X_test  = X_test .reshape(-1, 1)
 
-def mae(y_test, y_pred):
-  """
-  Calculuates mean absolute error between y_test and y_preds.
-  """
-  return tf.metrics.mean_absolute_error(y_test, y_pred)
-
-
-def mse(y_test, y_pred):
-  """
-  Calculates mean squared error between y_test and y_preds.
-  """
-  return tf.metrics.mean_squared_error(y_test, y_pred)
-
-
-# Check Tensorflow version
-print(tf.__version__)
-
-
-# Create features
-X = np.arange(-100, 100, 4)
-
-# Create labels
-y = np.arange(-90, 110, 4)
-
-
-# Split data into train and test sets
-X_train = X[:40] # first 40 examples (80% of data)
-y_train = y[:40]
-
-X_test = X[40:] # last 10 examples (20% of data)
-y_test = y[40:]
-
-
-# Take a single example of X
-input_shape = X[0].shape
-
-# Take a single example of y
-output_shape = y[0].shape
-
-
-# Set random seed
+# 4. Build model
 tf.random.set_seed(42)
-
-# Create a model using the Sequential API
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(1),
+    tf.keras.layers.Dense(8, activation="relu", input_shape=(1,)),
     tf.keras.layers.Dense(1)
-    ])
+])
+model.compile(loss='mae', optimizer='sgd', metrics=['mae'])
 
-# Compile the model
-model.compile(loss = tf.keras.losses.mae,
-              optimizer = tf.keras.optimizers.SGD(),
-              metrics = ['mae'])
+# 5. Train
+model.fit(X_train, y_train, epochs=100, verbose=0)
 
-# Fit the model
-model.fit(X_train, y_train, epochs=100)
-
-
-# Make and plot predictions for model_1
+# 6. Predict & plot
 y_preds = model.predict(X_test)
-plot_predictions(train_data=X_train, train_labels=y_train,  test_data=X_test, test_labels=y_test,  predictions=y_preds)
+plot_predictions(X_train, y_train, X_test, y_test, y_preds.squeeze())
 
+# 7. Metrics
+mae_val = tf.metrics.mean_absolute_error(y_test, y_preds.squeeze()).numpy().round(2)
+mse_val = tf.metrics.mean_squared_error(y_test, y_preds.squeeze()).numpy().round(2)
 
-# Calculate model_1 metrics
-mae_1 = np.round(float(mae(y_test, y_preds.squeeze()).numpy()), 2)
-mse_1 = np.round(float(mse(y_test, y_preds.squeeze()).numpy()), 2)
-print(f'\nMean Absolute Error = {mae_1}, Mean Squared Error = {mse_1}.')
-
-# Write metrics to file
-with open('metrics.txt', 'w') as outfile:
-    outfile.write(f'\nMean Absolute Error = {mae_1}, Mean Squared Error = {mse_1}.')
+# 8. Save for CML
+with open('results.txt', 'w') as f:
+    f.write(f'MAE = {mae_val}, MSE = {mse_val}')
+print(f'MAE = {mae_val}, MSE = {mse_val}')
