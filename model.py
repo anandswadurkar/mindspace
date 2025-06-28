@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_predictions(train_data, train_labels, test_data, test_labels, predictions):
     plt.figure(figsize=(6, 5))
@@ -42,8 +43,11 @@ y_preds = model.predict(X_test)
 plot_predictions(X_train, y_train, X_test, y_test, y_preds.squeeze())
 
 # 7. Metrics
-mae_val = tf.metrics.mean_absolute_error(y_test, y_preds.squeeze()).numpy().round(2)
-mse_val = tf.metrics.mean_squared_error(y_test, y_preds.squeeze()).numpy().round(2)
+#mae_val = tf.metrics.mean_absolute_error(y_test, y_preds.squeeze()).numpy().round(2)
+#mse_val = tf.metrics.mean_squared_error(y_test, y_preds.squeeze()).numpy().round(2)
+
+mae_val = np.round(np.mean(np.abs(y_test - y_preds.squeeze())), 2)
+mse_val = np.round(np.mean(np.square(y_test - y_preds.squeeze())), 2)
 
 # 8. Save for CML
 with open('results.txt', 'w') as f:
